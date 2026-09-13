@@ -47,7 +47,8 @@ export default function App() {
 
   if (session === undefined) return <div className="center muted">Loading…</div>;
   if (!session) return <Login />;
-  if (loadingProfile && !season) return <div className="center muted">Loading your season…</div>;
+  // Gate the whole app on the season being loaded so nothing renders with a null season.
+  if (!season) return <div className="center muted">{err || 'Loading your season…'}</div>;
 
   if (session && season && !team) {
     return (
