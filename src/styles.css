@@ -109,6 +109,16 @@ table.stand{width:100%;border-collapse:collapse;min-width:420px}
 .auth-form input{padding:10px 11px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
 .auth-form .btn{margin-top:4px}
 
+/* type-to-filter player picker */
+.ppick{position:relative}
+.ppick-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:none;font-size:20px;line-height:1;color:var(--faint);cursor:pointer;padding:0 4px}
+.ppick-clear:hover{color:var(--ink)}
+.ppick-menu{position:absolute;z-index:30;top:calc(100% + 4px);left:0;right:0;max-height:280px;overflow-y:auto;margin:0;padding:4px;list-style:none;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(20,30,24,.18)}
+.ppick-menu li{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;font-size:14px}
+.ppick-menu li.on{background:var(--accent-soft)}
+.ppick-team{color:var(--faint);font-weight:600;font-variant-numeric:tabular-nums}
+.ppick-empty{color:var(--muted);cursor:default}
+
 @media (max-width:520px){
   .lrow{grid-template-columns:48px 1fr 64px}
   .teamlist{columns:1}

@@ -3,6 +3,7 @@ import {
   POSITIONS, POS_LABEL, getPlayers, getUsedPlayerIds, getLineup,
   ensureLineup, setSlot, clearSlot, getWeekScores,
 } from '../api.js';
+import PlayerPicker from './PlayerPicker.jsx';
 
 export default function MyLineup({ season, team }) {
   const week = season.current_week;
@@ -84,19 +85,13 @@ export default function MyLineup({ season, team }) {
           return (
             <div className="lrow" key={pos}>
               <span className="pos">{POS_LABEL[pos]}</span>
-              <select
-                className="pick"
-                value={cur}
+              <PlayerPicker
+                options={eligible}
+                value={cur || null}
+                onChange={(id) => change(pos, id || '')}
                 disabled={busyPos === pos}
-                onChange={(e) => change(pos, e.target.value)}
-              >
-                <option value="">— pick {POS_LABEL[pos]} —</option>
-                {eligible.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}{pos !== 'DEF' ? ` · ${p.nfl_team}` : ''}
-                  </option>
-                ))}
-              </select>
+                placeholder={`Search ${POS_LABEL[pos]}…`}
+              />
               <span className="score">{sc != null ? sc.toFixed(2) : '—'}</span>
             </div>
           );
