@@ -60,7 +60,8 @@ export default function App() {
     );
   }
 
-  const isCommish = !!team?.is_commissioner;
+  const isAdmin = !!team?.is_admin;
+  const isCommissioner = !!team?.is_commissioner;
 
   return (
     <div className="app">
@@ -70,7 +71,7 @@ export default function App() {
           <span className="sub">Season {season?.year} · Week {season?.current_week}</span>
         </div>
         <div className="whoami">
-          <span className="team-chip">{team?.name}{isCommish ? ' · commish' : ''}</span>
+          <span className="team-chip">{team?.name}{isCommissioner ? ' · commish' : ''}</span>
           <button className="btn ghost" onClick={() => supabase.auth.signOut()}>Sign out</button>
         </div>
       </header>
@@ -79,7 +80,7 @@ export default function App() {
         <button className={tab === 'lineup' ? 'tab on' : 'tab'} onClick={() => setTab('lineup')}>My Lineup</button>
         <button className={tab === 'league' ? 'tab on' : 'tab'} onClick={() => setTab('league')}>The League</button>
         <button className={tab === 'standings' ? 'tab on' : 'tab'} onClick={() => setTab('standings')}>Standings</button>
-        {isCommish && <button className={tab === 'admin' ? 'tab on' : 'tab'} onClick={() => setTab('admin')}>Admin</button>}
+        {isAdmin && <button className={tab === 'admin' ? 'tab on' : 'tab'} onClick={() => setTab('admin')}>Admin</button>}
       </nav>
 
       <main className="wrap">
@@ -87,7 +88,7 @@ export default function App() {
         {tab === 'lineup' && <MyLineup season={season} team={team} />}
         {tab === 'league' && <League season={season} team={team} />}
         {tab === 'standings' && <Standings season={season} team={team} />}
-        {tab === 'admin' && isCommish && <Admin season={season} onSeasonChange={loadProfile} />}
+        {tab === 'admin' && isAdmin && <Admin season={season} onSeasonChange={loadProfile} />}
       </main>
     </div>
   );
