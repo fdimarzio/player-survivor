@@ -4,13 +4,15 @@ import {
   ensureLineup, setSlot, clearSlot, getWeekScores,
 } from '../api.js';
 import PlayerPicker from './PlayerPicker.jsx';
+import { getLiveScores } from '../lib/espnLive.js';
 
 export default function MyLineup({ season, team }) {
   const week = season.current_week;
   const [players, setPlayers] = useState(null);
   const [used, setUsed] = useState(new Set());
-  const [slots, setSlots] = useState({}); // position -> player_id
+  const [slots, setSlots] = useState({});
   const [scores, setScores] = useState({});
+  const [live, setLive] = useState({});
   const [busyPos, setBusyPos] = useState('');
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
@@ -39,6 +41,16 @@ export default function MyLineup({ season, team }) {
 
   useEffect(() => { load(); }, [load]);
 
+  // Live ESPN scores (browser-side), refreshed while games are on.
+  useEffect(() => {
+    if (!players) return;
+    let alive = true;
+    const run = () => getLiveScores(season.year, week, players).then((r) => { if (alive) setLive(r.live || {}); });
+    run();
+    const t = setInterval(run, 90000);
+    return () => { alive = false; clearInterval(t); };
+  }, [players, season.year, week]);
+
   async function change(pos, playerId) {
     setBusyPos(pos); setErr('');
     try {
@@ -49,7 +61,7 @@ export default function MyLineup({ season, team }) {
         const lineup = await ensureLineup(team.id, season.id, week);
         const e = await setSlot(lineup.id, pos, playerId);
         if (e) {
-          if (e.code === '23505') setErr(`You already used that player earlier this season — each player is once per year.`);
+          if (e.code === '23505') setErr('You already used that player earlier this season — each player is once per year.');
           else setErr(e.message);
           setBusyPos(''); return;
         }
@@ -64,7 +76,14 @@ export default function MyLineup({ season, team }) {
 
   if (loading || !players) return <div className="muted">Loading your lineup…</div>;
 
-  const total = POSITIONS.reduce((sum, p) => sum + (slots[p] && scores[slots[p]] != null ? scores[slots[p]] : 0), 0);
+  const shown = (id) => {
+    if (!id) return { val: null, live: false };
+    if (scores[id] != null) return { val: scores[id], live: false };
+    if (live[id] != null) return { val: live[id], live: true };
+    return { val: null, live: false };
+  };
+
+  const total = POSITIONS.reduce((sum, p) => sum + (shown(slots[p]).val || 0), 0);
   const filled = POSITIONS.filter((p) => slots[p]).length;
 
   return (
@@ -81,7 +100,7 @@ export default function MyLineup({ season, team }) {
         {POSITIONS.map((pos) => {
           const cur = slots[pos] || '';
           const eligible = players.byPos[pos].filter((p) => !used.has(p.id) || p.id === cur);
-          const sc = cur && scores[cur] != null ? scores[cur] : null;
+          const s = shown(cur);
           return (
             <div className="lrow" key={pos}>
               <span className="pos">{POS_LABEL[pos]}</span>
@@ -92,7 +111,10 @@ export default function MyLineup({ season, team }) {
                 disabled={busyPos === pos}
                 placeholder={`Search ${POS_LABEL[pos]}…`}
               />
-              <span className="score">{sc != null ? sc.toFixed(2) : '—'}</span>
+              <span className="score">
+                {s.val != null ? s.val.toFixed(2) : '—'}
+                {s.live ? <span className="livetag">live</span> : null}
+              </span>
             </div>
           );
         })}
@@ -101,7 +123,7 @@ export default function MyLineup({ season, team }) {
           <span className="total">{total.toFixed(2)}</span>
         </div>
       </div>
-      <p className="muted small">Scores fill in automatically as games are played (updated every ~10 minutes).</p>
+      <p className="muted small">Scores marked <span className="livetag">live</span> come from in-progress games and finalize automatically once official stats post.</p>
     </section>
   );
 }

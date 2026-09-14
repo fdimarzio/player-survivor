@@ -118,6 +118,7 @@ table.stand{width:100%;border-collapse:collapse;min-width:420px}
 .ppick-menu li.on{background:var(--accent-soft)}
 .ppick-team{color:var(--faint);font-weight:600;font-variant-numeric:tabular-nums}
 .ppick-empty{color:var(--muted);cursor:default}
+.livetag{display:inline-block;margin-left:6px;font-family:var(--body);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);background:var(--accent-soft);padding:1px 5px;border-radius:999px;vertical-align:middle}
 
 @media (max-width:520px){
   .lrow{grid-template-columns:48px 1fr 64px}
