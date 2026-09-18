@@ -7,6 +7,7 @@ import MyLineup from './components/MyLineup.jsx';
 import League from './components/League.jsx';
 import Standings from './components/Standings.jsx';
 import Admin from './components/Admin.jsx';
+import CommishLineups from './components/CommishLineups.jsx';
 
 export default function App() {
   const [session, setSession] = useState(undefined); // undefined = loading
@@ -81,6 +82,7 @@ export default function App() {
         <button className={tab === 'league' ? 'tab on' : 'tab'} onClick={() => setTab('league')}>The League</button>
         <button className={tab === 'standings' ? 'tab on' : 'tab'} onClick={() => setTab('standings')}>Standings</button>
         {isAdmin && <button className={tab === 'admin' ? 'tab on' : 'tab'} onClick={() => setTab('admin')}>Admin</button>}
+        {isCommissioner && <button className={tab === 'manage' ? 'tab on' : 'tab'} onClick={() => setTab('manage')}>Manage</button>}
       </nav>
 
       <main className="wrap">
@@ -89,6 +91,7 @@ export default function App() {
         {tab === 'league' && <League season={season} team={team} />}
         {tab === 'standings' && <Standings season={season} team={team} />}
         {tab === 'admin' && isAdmin && <Admin season={season} onSeasonChange={loadProfile} />}
+        {tab === 'manage' && isCommissioner && <CommishLineups season={season} />}
       </main>
     </div>
   );
