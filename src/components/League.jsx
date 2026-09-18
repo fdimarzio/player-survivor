@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { getLeaguePicks, getLineup, POS_LABEL, POSITIONS } from '../api.js';
 
 export default function League({ season, team }) {
-  const week = season.current_week;
+  const [week, setWeek] = useState(season.current_week);
   const [rows, setRows] = useState(null);
   const [mySubmittedAt, setMySubmittedAt] = useState(null);
   const [err, setErr] = useState('');
@@ -37,14 +37,20 @@ export default function League({ season, team }) {
 
   const shown = (p) => (p && p.revealed && p.score != null ? { val: Number(p.score) } : { val: null });
 
+  const weeks = [];
+  for (let w = season.current_week; w >= 1; w--) weeks.push(w);
+
   return (
     <section>
       <div className="sechead">
         <h2>Around the League · Week {week}</h2>
+        <select className="pick" style={{ maxWidth: 150, marginLeft: 'auto' }} value={week} onChange={(e) => setWeek(Number(e.target.value))}>
+          {weeks.map((w) => <option key={w} value={w}>Week {w}{w === season.current_week ? ' · current' : ''}</option>)}
+        </select>
       </div>
       <p className="muted small">Opponents' picks unlock as each player's game kicks off.</p>
 
-      {!mySubmittedAt && (
+      {!mySubmittedAt && week === season.current_week && (
         <div className="banner">Submit your lineup to see other teams' picks after Sunday 1:00 PM ET.</div>
       )}
 
