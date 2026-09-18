@@ -1,45 +1,25 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getLeaguePicks, getPlayers, POS_LABEL, POSITIONS } from '../api.js';
-import { getLiveScores } from '../lib/espnLive.js';
-
-function kickoffLabel(iso) {
-  if (!iso) return 'kickoff';
-  try {
-    return new Date(iso).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' });
-  } catch { return 'kickoff'; }
-}
+import { getLeaguePicks, getLineup, POS_LABEL, POSITIONS } from '../api.js';
 
 export default function League({ season, team }) {
   const week = season.current_week;
   const [rows, setRows] = useState(null);
-  const [players, setPlayers] = useState(null);
-  const [live, setLive] = useState({});
-  const [liveCount, setLiveCount] = useState(0);
+  const [mySubmittedAt, setMySubmittedAt] = useState(null);
   const [err, setErr] = useState('');
 
   const load = useCallback(async () => {
     setErr('');
     try {
-      const [data, pl] = await Promise.all([getLeaguePicks(season.id, week), getPlayers()]);
+      const [data, myLineup] = await Promise.all([
+        getLeaguePicks(season.id, week),
+        getLineup(team.id, week),
+      ]);
       setRows(data);
-      setPlayers(pl);
+      setMySubmittedAt(myLineup?.submitted_at || null);
     } catch (e) { setErr(e.message || String(e)); }
-  }, [season.id, week]);
+  }, [season.id, week, team.id]);
 
   useEffect(() => { load(); }, [load]);
-
-  useEffect(() => {
-    if (!players) return;
-    let alive = true;
-    const run = () => getLiveScores(season.year, week, players).then((r) => {
-      if (!alive) return;
-      setLive(r.live || {});
-      setLiveCount(r.liveCount || 0);
-    });
-    run();
-    const t = setInterval(run, 90000);
-    return () => { alive = false; clearInterval(t); };
-  }, [players, season.year, week]);
 
   if (err) return <div className="banner err">{err}</div>;
   if (!rows) return <div className="muted">Loading the league…</div>;
@@ -55,21 +35,18 @@ export default function League({ season, team }) {
     return a[1].name.localeCompare(b[1].name);
   });
 
-  // score to show for a revealed pick: final if present, else live
-  const shown = (p) => {
-    if (!p || !p.revealed) return { val: null, live: false };
-    if (p.score != null) return { val: Number(p.score), live: false };
-    if (live[p.player_id] != null) return { val: live[p.player_id], live: true };
-    return { val: null, live: false };
-  };
+  const shown = (p) => (p && p.revealed && p.score != null ? { val: Number(p.score) } : { val: null });
 
   return (
     <section>
       <div className="sechead">
         <h2>Around the League · Week {week}</h2>
-        {liveCount > 0 && <span className="pill live">{liveCount} games live</span>}
       </div>
-      <p className="muted small">Opponents' picks unlock as each player's game kicks off. <span className="livetag">live</span> = in-progress score.</p>
+      <p className="muted small">Opponents' picks unlock as each player's game kicks off.</p>
+
+      {!mySubmittedAt && (
+        <div className="banner">Submit your lineup to see other teams' picks after Sunday 1:00 PM ET.</div>
+      )}
 
       <div className="leaguegrid">
         {order.map(([tid, t]) => {
@@ -92,11 +69,8 @@ export default function League({ season, team }) {
                       {!p ? <span className="rn muted">—</span>
                         : p.revealed
                           ? <span className="rn">{p.player_name}</span>
-                          : <span className="rn hidden">Hidden · {kickoffLabel(p.kickoff_at)}</span>}
-                      <span className="rs">
-                        {s.val != null ? s.val.toFixed(1) : ''}
-                        {s.live ? <span className="livetag">live</span> : null}
-                      </span>
+                          : <span className="rn hidden">Hidden</span>}
+                      <span className="rs">{s.val != null ? s.val.toFixed(1) : ''}</span>
                     </li>
                   );
                 })}

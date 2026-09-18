@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
-import { getAllTeams, setCurrentWeek } from '../api.js';
+import { getAllTeams, setCurrentWeek, getSubmissionStatus } from '../api.js';
 
 export default function Admin({ season, onSeasonChange }) {
   const [week, setWeek] = useState(season.current_week);
   const [teams, setTeams] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
   useEffect(() => { getAllTeams().then(setTeams).catch((e) => setErr(e.message)); }, []);
+  useEffect(() => {
+    getSubmissionStatus(season.id, season.current_week).then(setSubmissions).catch((e) => setErr(e.message));
+  }, [season.id, season.current_week]);
 
   async function save() {
     setErr(''); setMsg('');
@@ -31,6 +35,15 @@ export default function Admin({ season, onSeasonChange }) {
         </div>
         {msg && <div className="banner ok">{msg}</div>}
         {err && <div className="banner err">{err}</div>}
+      </div>
+
+      <div className="card pad">
+        <h3>Submissions — Week {season.current_week}</h3>
+        <ul className="teamlist">
+          {submissions.map((s) => (
+            <li key={s.team_id}>{s.submitted ? '✓' : '—'} {s.team_name}</li>
+          ))}
+        </ul>
       </div>
 
       <div className="card pad">

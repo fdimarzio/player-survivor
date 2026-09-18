@@ -154,6 +154,33 @@ export async function claimMyTeam() {
   return data || null;
 }
 
+export async function submitLineup(lineupId) {
+  const { error } = await supabase
+    .from('lineups')
+    .update({ submitted_at: new Date().toISOString(), status: 'submitted' })
+    .eq('id', lineupId);
+  if (error) throw error;
+}
+
+// nfl_team -> kickoff_at (ISO string)
+export async function getGamesForWeek(seasonId, week) {
+  const { data, error } = await supabase
+    .from('games')
+    .select('nfl_team, kickoff_at')
+    .eq('season_id', seasonId)
+    .eq('week', week);
+  if (error) throw error;
+  const map = {};
+  for (const g of data || []) map[g.nfl_team] = g.kickoff_at;
+  return map;
+}
+
+export async function getSubmissionStatus(seasonId, week) {
+  const { data, error } = await supabase.rpc('get_submission_status', { p_season: seasonId, p_week: week });
+  if (error) throw error;
+  return data || [];
+}
+
 export async function setCurrentWeek(seasonId, week) {
   const { error } = await supabase.from('seasons').update({ current_week: week }).eq('id', seasonId);
   if (error) throw error;

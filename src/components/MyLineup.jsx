@@ -1,10 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   POSITIONS, POS_LABEL, getPlayers, getUsedPlayerIds, getLineup,
-  ensureLineup, setSlot, clearSlot, getWeekScores,
+  ensureLineup, setSlot, clearSlot, getWeekScores, getGamesForWeek, submitLineup,
 } from '../api.js';
 import PlayerPicker from './PlayerPicker.jsx';
-import { getLiveScores } from '../lib/espnLive.js';
 
 export default function MyLineup({ season, team }) {
   const week = season.current_week;
@@ -12,26 +11,33 @@ export default function MyLineup({ season, team }) {
   const [used, setUsed] = useState(new Set());
   const [slots, setSlots] = useState({});
   const [scores, setScores] = useState({});
-  const [live, setLive] = useState({});
+  const [games, setGames] = useState({});
+  const [lineupId, setLineupId] = useState(null);
+  const [submittedAt, setSubmittedAt] = useState(null);
   const [busyPos, setBusyPos] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true); setErr('');
     try {
-      const [pl, usedIds, lineup, sc] = await Promise.all([
+      const [pl, usedIds, lineup, sc, gm] = await Promise.all([
         getPlayers(),
         getUsedPlayerIds(team.id, week),
         getLineup(team.id, week),
         getWeekScores(season.id, week),
+        getGamesForWeek(season.id, week),
       ]);
       setPlayers(pl);
       setUsed(usedIds);
       setScores(sc);
+      setGames(gm);
       const m = {};
       for (const s of lineup?.lineup_slots || []) m[s.position] = s.player_id;
       setSlots(m);
+      setLineupId(lineup?.id || null);
+      setSubmittedAt(lineup?.submitted_at || null);
     } catch (e) {
       setErr(e.message || String(e));
     } finally {
@@ -41,22 +47,15 @@ export default function MyLineup({ season, team }) {
 
   useEffect(() => { load(); }, [load]);
 
-  // Live ESPN scores (browser-side), refreshed while games are on.
-  useEffect(() => {
-    if (!players) return;
-    let alive = true;
-    const run = () => getLiveScores(season.year, week, players).then((r) => { if (alive) setLive(r.live || {}); });
-    run();
-    const t = setInterval(run, 90000);
-    return () => { alive = false; clearInterval(t); };
-  }, [players, season.year, week]);
-
   async function change(pos, playerId) {
     setBusyPos(pos); setErr('');
     try {
       if (!playerId) {
         const lineup = await getLineup(team.id, week);
-        if (lineup) await clearSlot(lineup.id, pos);
+        if (lineup) {
+          const e = await clearSlot(lineup.id, pos);
+          if (e) { setErr(e.message); setBusyPos(''); return; }
+        }
       } else {
         const lineup = await ensureLineup(team.id, season.id, week);
         const e = await setSlot(lineup.id, pos, playerId);
@@ -74,17 +73,39 @@ export default function MyLineup({ season, team }) {
     }
   }
 
+  async function handleSubmit() {
+    if (!lineupId) return;
+    setSubmitting(true); setErr('');
+    try {
+      await submitLineup(lineupId);
+      await load();
+    } catch (e) {
+      setErr(e.message || String(e));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   if (loading || !players) return <div className="muted">Loading your lineup…</div>;
 
-  const shown = (id) => {
-    if (!id) return { val: null, live: false };
-    if (scores[id] != null) return { val: scores[id], live: false };
-    if (live[id] != null) return { val: live[id], live: true };
-    return { val: null, live: false };
+  const kickoff = (playerId) => {
+    if (!playerId) return null;
+    const p = players.byId[playerId];
+    const iso = p && games[p.nfl_team];
+    return iso ? new Date(iso) : null;
   };
+
+  const now = new Date();
+  const locked = POSITIONS.some((pos) => {
+    const k = kickoff(slots[pos]);
+    return k && k <= now;
+  });
+
+  const shown = (id) => (id && scores[id] != null ? { val: scores[id] } : { val: null });
 
   const total = POSITIONS.reduce((sum, p) => sum + (shown(slots[p]).val || 0), 0);
   const filled = POSITIONS.filter((p) => slots[p]).length;
+  const canSubmit = filled === POSITIONS.length && !submittedAt;
 
   return (
     <section>
@@ -94,12 +115,19 @@ export default function MyLineup({ season, team }) {
       </div>
       <p className="muted small">Each NFL player can be used <b>once all season</b>. Players you've already used are hidden from the lists below.</p>
 
+      {locked && <div className="banner">Locked — your first player's game has started.</div>}
       {err && <div className="banner err">{err}</div>}
 
       <div className="lineup card">
         {POSITIONS.map((pos) => {
           const cur = slots[pos] || '';
-          const eligible = players.byPos[pos].filter((p) => !used.has(p.id) || p.id === cur);
+          const eligible = players.byPos[pos].filter((p) => {
+            if (p.id === cur) return true;
+            if (used.has(p.id)) return false;
+            const k = kickoff(p.id);
+            if (k && k <= now) return false;
+            return true;
+          });
           const s = shown(cur);
           return (
             <div className="lrow" key={pos}>
@@ -108,12 +136,11 @@ export default function MyLineup({ season, team }) {
                 options={eligible}
                 value={cur || null}
                 onChange={(id) => change(pos, id || '')}
-                disabled={busyPos === pos}
+                disabled={busyPos === pos || locked}
                 placeholder={`Search ${POS_LABEL[pos]}…`}
               />
               <span className="score">
                 {s.val != null ? s.val.toFixed(2) : '—'}
-                {s.live ? <span className="livetag">live</span> : null}
               </span>
             </div>
           );
@@ -123,7 +150,15 @@ export default function MyLineup({ season, team }) {
           <span className="total">{total.toFixed(2)}</span>
         </div>
       </div>
-      <p className="muted small">Scores marked <span className="livetag">live</span> come from in-progress games and finalize automatically once official stats post.</p>
+
+      <div className="lfoot-submit">
+        {canSubmit && (
+          <button className="btn primary" onClick={handleSubmit} disabled={submitting}>
+            {submitting ? 'Submitting…' : 'Submit Lineup'}
+          </button>
+        )}
+        {submittedAt && <p className="muted small">Submitted ✓ (you can still edit until your first game starts)</p>}
+      </div>
     </section>
   );
 }
