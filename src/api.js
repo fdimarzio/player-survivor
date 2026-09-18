@@ -140,6 +140,20 @@ export async function getStandings(seasonId) {
   return (data || []).slice().sort((a, b) => Number(b.total_points) - Number(a.total_points));
 }
 
+export async function getWeekTotals(seasonId, week) {
+  const { data, error } = await supabase.rpc('get_week_totals', { p_season: seasonId, p_week: week });
+  if (error) throw error;
+  return (data || [])
+    .map((r) => ({ team_id: r.team_id, team_name: r.team_name, total_points: Number(r.total), weekly_wins: null }))
+    .sort((a, b) => b.total_points - a.total_points);
+}
+
+export async function claimMyTeam() {
+  const { data, error } = await supabase.rpc('claim_my_team');
+  if (error) throw error;
+  return data || null;
+}
+
 export async function setCurrentWeek(seasonId, week) {
   const { error } = await supabase.from('seasons').update({ current_week: week }).eq('id', seasonId);
   if (error) throw error;

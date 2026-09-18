@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from './supabaseClient.js';
-import { getSeason, getMyTeam } from './api.js';
+import { getSeason, getMyTeam, claimMyTeam } from './api.js';
 import Login from './components/Login.jsx';
 import CreateTeam from './components/CreateTeam.jsx';
 import MyLineup from './components/MyLineup.jsx';
@@ -29,7 +29,7 @@ export default function App() {
     try {
       const [s, t] = await Promise.all([getSeason(), getMyTeam(session.user.id)]);
       setSeason(s);
-      setTeam(t);
+      setTeam(t || (await claimMyTeam()));
     } catch (e) {
       setErr(e.message || String(e));
     } finally {
@@ -60,7 +60,7 @@ export default function App() {
     );
   }
 
-  const isAdmin = !!team?.is_admin;
+  const isAdmin = !!(team?.is_admin || team?.is_commissioner);
   const isCommissioner = !!team?.is_commissioner;
 
   return (
