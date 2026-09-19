@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
-import { getAllTeams, setCurrentWeek, getSubmissionStatus } from '../api.js';
+import { getAllTeams, getSubmissionStatus } from '../api.js';
 
 export default function Admin({ season, onSeasonChange }) {
-  const [week, setWeek] = useState(season.current_week);
   const [teams, setTeams] = useState([]);
   const [submissions, setSubmissions] = useState([]);
-  const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
   useEffect(() => { getAllTeams().then(setTeams).catch((e) => setErr(e.message)); }, []);
@@ -13,29 +11,16 @@ export default function Admin({ season, onSeasonChange }) {
     getSubmissionStatus(season.id, season.current_week).then(setSubmissions).catch((e) => setErr(e.message));
   }, [season.id, season.current_week]);
 
-  async function save() {
-    setErr(''); setMsg('');
-    try {
-      await setCurrentWeek(season.id, Number(week));
-      setMsg(`Current week set to ${week}.`);
-      onSeasonChange?.();
-    } catch (e) { setErr(e.message || String(e)); }
-  }
-
   return (
     <section>
       <div className="sechead"><h2>Commissioner</h2></div>
 
       <div className="card pad">
         <h3>Current week</h3>
-        <p className="muted small">Sets which week teams enter lineups for and which week is scored.</p>
-        <div className="row">
-          <input type="number" min="1" max="18" value={week} onChange={(e) => setWeek(e.target.value)} style={{ width: 90 }} />
-          <button className="btn primary" onClick={save}>Save</button>
-        </div>
-        {msg && <div className="banner ok">{msg}</div>}
-        {err && <div className="banner err">{err}</div>}
+        <p className="muted">Week {season.current_week} — advances automatically based on the NFL schedule.</p>
       </div>
+
+      {err && <div className="banner err">{err}</div>}
 
       <div className="card pad">
         <h3>Submissions — Week {season.current_week}</h3>
