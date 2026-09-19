@@ -28,7 +28,7 @@ export default function LeagueRules() {
             <tr><td className="l"><b>Fumble lost</b></td><td className="l">−2</td></tr>
             <tr><td className="l"><b>Kicking</b></td><td className="l">FG 3 (+1 for 45–49, +2 for 50+) · extra point 1</td></tr>
             <tr><td className="l"><b>Defense / ST</b></td><td className="l">Sack 2 · INT 2 · Fumble rec 2 · TD 6 · Safety 2</td></tr>
-            <tr><td className="l"><b>Points allowed</b></td><td className="l">0 → 6 · 1–6 → 3 · 7+ → 0</td></tr>
+            <tr><td className="l"><b>Points allowed</b></td><td className="l">0 → 6 · 1–7 → 3 · 8+ → 0</td></tr>
             <tr><td className="l"><b>Yards allowed</b></td><td className="l">0–199 → 6 · 200–249 → 4 · 250–299 → 2 · 300+ → 0</td></tr>
           </tbody>
         </table>
