@@ -9,6 +9,7 @@ import Standings from './components/Standings.jsx';
 import Admin from './components/Admin.jsx';
 import CommishLineups from './components/CommishLineups.jsx';
 import PicksHistory from './components/PicksHistory.jsx';
+import LeagueRules from './components/LeagueRules.jsx';
 
 export default function App() {
   const [session, setSession] = useState(undefined); // undefined = loading
@@ -83,6 +84,7 @@ export default function App() {
         <button className={tab === 'league' ? 'tab on' : 'tab'} onClick={() => setTab('league')}>The League</button>
         <button className={tab === 'standings' ? 'tab on' : 'tab'} onClick={() => setTab('standings')}>Standings</button>
         <button className={tab === 'history' ? 'tab on' : 'tab'} onClick={() => setTab('history')}>History</button>
+        <button className={tab === 'rules' ? 'tab on' : 'tab'} onClick={() => setTab('rules')}>Rules</button>
         {isAdmin && <button className={tab === 'admin' ? 'tab on' : 'tab'} onClick={() => setTab('admin')}>Admin</button>}
         {isCommissioner && <button className={tab === 'manage' ? 'tab on' : 'tab'} onClick={() => setTab('manage')}>Manage</button>}
       </nav>
@@ -93,6 +95,7 @@ export default function App() {
         {tab === 'league' && <League season={season} team={team} />}
         {tab === 'standings' && <Standings season={season} team={team} />}
         {tab === 'history' && <PicksHistory season={season} team={team} />}
+        {tab === 'rules' && <LeagueRules />}
         {tab === 'admin' && isAdmin && <Admin season={season} onSeasonChange={loadProfile} />}
         {tab === 'manage' && isCommissioner && <CommishLineups season={season} />}
       </main>

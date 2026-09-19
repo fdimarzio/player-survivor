@@ -181,6 +181,19 @@ export async function getSubmissionStatus(seasonId, week) {
   return data || [];
 }
 
+export async function getScoresUpdatedAt(seasonId, week) {
+  const { data, error } = await supabase
+    .from('player_week_stats')
+    .select('updated_at')
+    .eq('season_id', seasonId)
+    .eq('week', week)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.updated_at || null;
+}
+
 export async function setCurrentWeek(seasonId, week) {
   const { error } = await supabase.from('seasons').update({ current_week: week }).eq('id', seasonId);
   if (error) throw error;

@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getLeaguePicks, getLineup, POS_LABEL, POSITIONS } from '../api.js';
+import { getLeaguePicks, getLineup, getScoresUpdatedAt, POS_LABEL, POSITIONS } from '../api.js';
 
 export default function League({ season, team }) {
   const [week, setWeek] = useState(season.current_week);
   const [rows, setRows] = useState(null);
   const [mySubmittedAt, setMySubmittedAt] = useState(null);
+  const [updatedAt, setUpdatedAt] = useState(null);
   const [err, setErr] = useState('');
 
   const load = useCallback(async () => {
@@ -13,6 +14,7 @@ export default function League({ season, team }) {
       const [data, myLineup] = await Promise.all([
         getLeaguePicks(season.id, week),
         getLineup(team.id, week),
+        getScoresUpdatedAt(season.id, week).then(setUpdatedAt),
       ]);
       setRows(data);
       setMySubmittedAt(myLineup?.submitted_at || null);
@@ -85,6 +87,15 @@ export default function League({ season, team }) {
           );
         })}
       </div>
+
+      <p className="muted small" style={{ marginTop: 16 }}>
+        {updatedAt
+          ? `Scores last updated ${new Date(updatedAt).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })}`
+          : 'No scores posted for this week yet'}
+        {' · auto-refreshes ~every 10 min · powered by '}
+        <a href="https://nflverse.com" target="_blank" rel="noreferrer">nflverse</a>
+        {' (unofficial — CBS Sportsline is official)'}
+      </p>
     </section>
   );
 }
