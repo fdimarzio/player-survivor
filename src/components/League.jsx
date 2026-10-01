@@ -65,7 +65,7 @@ export default function League({ season, team }) {
             <div className={isMe ? 'teamcard me' : 'teamcard'} key={tid}>
               <div className="tc-head">
                 <span className="tc-name">{t.name}{isMe ? ' · you' : ''}</span>
-                <span className="tc-score">{tot.toFixed(1)}</span>
+                <span className="tc-score">{tot.toFixed(2)}</span>
               </div>
               <ul className="roster">
                 {POSITIONS.map((pos) => {
@@ -78,7 +78,7 @@ export default function League({ season, team }) {
                         : p.revealed
                           ? <span className="rn">{p.player_name}</span>
                           : <span className="rn hidden">Hidden</span>}
-                      <span className="rs">{s.val != null ? s.val.toFixed(1) : ''}</span>
+                      <span className="rs">{s.val != null ? s.val.toFixed(2) : ''}</span>
                     </li>
                   );
                 })}
