@@ -1,3 +1,4 @@
+import './authCallback.js'; // must run before supabaseClient parses & strips the URL
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';

@@ -31,6 +31,14 @@ export async function getAllTeams() {
   return data || [];
 }
 
+// Signup board (Admin): a team is SIGNED UP once owner_user_id is set (claimed via an
+// accepted invite / signup), OUTSTANDING while it's null. Read-only.
+export async function getTeamsSignupStatus() {
+  const { data, error } = await supabase.from('teams').select('id, name, owner_user_id').order('name');
+  if (error) throw error;
+  return data || [];
+}
+
 let _playersCache = null;
 export async function getPlayers() {
   if (_playersCache) return _playersCache;

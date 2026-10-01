@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { getAllTeams, getSubmissionStatus } from '../api.js';
+import { getAllTeams, getSubmissionStatus, getTeamsSignupStatus } from '../api.js';
 
 export default function Admin({ season, onSeasonChange }) {
   const [teams, setTeams] = useState([]);
   const [submissions, setSubmissions] = useState([]);
+  const [signups, setSignups] = useState([]);
   const [err, setErr] = useState('');
 
   useEffect(() => { getAllTeams().then(setTeams).catch((e) => setErr(e.message)); }, []);
+  useEffect(() => { getTeamsSignupStatus().then(setSignups).catch((e) => setErr(e.message)); }, []);
   useEffect(() => {
     getSubmissionStatus(season.id, season.current_week).then(setSubmissions).catch((e) => setErr(e.message));
   }, [season.id, season.current_week]);
@@ -21,6 +23,23 @@ export default function Admin({ season, onSeasonChange }) {
       </div>
 
       {err && <div className="banner err">{err}</div>}
+
+      <div className="card pad">
+        <h3>Signups</h3>
+        <p className="muted">{signups.filter((t) => t.owner_user_id).length} of {signups.length} signed up</p>
+        {signups.filter((t) => !t.owner_user_id).length > 0 ? (
+          <>
+            <p className="small">Outstanding:</p>
+            <ul className="teamlist">
+              {signups.filter((t) => !t.owner_user_id).map((t) => (
+                <li key={t.id}>— {t.name}</li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p className="muted small">Everyone's signed up. 🎉</p>
+        )}
+      </div>
 
       <div className="card pad">
         <h3>Submissions — Week {season.current_week}</h3>

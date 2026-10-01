@@ -11,7 +11,9 @@ if (!url || !anon) {
 // All app tables live in the `pool` schema (isolated from PAM/RAM).
 export const supabase = createClient(url, anon, {
   db: { schema: 'pool' },
-  auth: { persistSession: true, autoRefreshToken: true },
+  // detectSessionInUrl (default true) is required so invite / password-recovery links
+  // establish a session on load — see src/authCallback.js and App.jsx.
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 });
 
 export const SEASON_YEAR = 2026;
