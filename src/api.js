@@ -136,6 +136,18 @@ export async function getWeekScores(seasonId, week) {
   return map;
 }
 
+// NFL team abbreviations on bye for a given week, as a Set (e.g. {'KC','CAR'}).
+// Used to hide bye-week players from the lineup picker for the week being edited.
+export async function getByeTeams(seasonId, week) {
+  const { data, error } = await supabase.rpc('get_bye_teams', { p_season: seasonId, p_week: week });
+  if (error) {
+    // Don't let a bye-lookup hiccup block lineup editing — just hide nothing.
+    console.error('get_bye_teams failed', error);
+    return new Set();
+  }
+  return new Set((data || []).map((r) => r.nfl_team).filter(Boolean));
+}
+
 export async function getLeaguePicks(seasonId, week) {
   const { data, error } = await supabase.rpc('get_league_picks', { p_season: seasonId, p_week: week });
   if (error) throw error;

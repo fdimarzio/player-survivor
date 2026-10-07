@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   POSITIONS, POS_LABEL, getPlayers, getUsedPlayerIds, getLineup,
   ensureLineup, setSlot, clearSlot, getWeekScores, getGamesForWeek, submitLineup,
+  getByeTeams,
 } from '../api.js';
 import PlayerPicker from './PlayerPicker.jsx';
 
@@ -9,6 +10,7 @@ export default function MyLineup({ season, team }) {
   const week = season.current_week;
   const [players, setPlayers] = useState(null);
   const [used, setUsed] = useState(new Set());
+  const [byeTeams, setByeTeams] = useState(new Set());
   const [slots, setSlots] = useState({});
   const [scores, setScores] = useState({});
   const [games, setGames] = useState({});
@@ -22,15 +24,17 @@ export default function MyLineup({ season, team }) {
   const load = useCallback(async () => {
     setLoading(true); setErr('');
     try {
-      const [pl, usedIds, lineup, sc, gm] = await Promise.all([
+      const [pl, usedIds, lineup, sc, gm, bye] = await Promise.all([
         getPlayers(),
         getUsedPlayerIds(team.id, week),
         getLineup(team.id, week),
         getWeekScores(season.id, week),
         getGamesForWeek(season.id, week),
+        getByeTeams(season.id, week),
       ]);
       setPlayers(pl);
       setUsed(usedIds);
+      setByeTeams(bye);
       setScores(sc);
       setGames(gm);
       const m = {};
@@ -113,7 +117,7 @@ export default function MyLineup({ season, team }) {
         <h2>Week {week} Lineup</h2>
         <span className="pill">{filled}/6 set</span>
       </div>
-      <p className="muted small">Each NFL player can be used <b>once all season</b>. Players you've already used are hidden from the lists below.</p>
+      <p className="muted small">Each NFL player can be used <b>once all season</b>. Players you've already used are hidden from the lists below.{byeTeams.size > 0 ? ' Players on bye this week are hidden.' : ''}</p>
 
       {locked && <div className="banner">Locked — your first player's game has started.</div>}
       {err && <div className="banner err">{err}</div>}
@@ -124,6 +128,7 @@ export default function MyLineup({ season, team }) {
           const eligible = players.byPos[pos].filter((p) => {
             if (p.id === cur) return true;
             if (used.has(p.id)) return false;
+            if (byeTeams.has(p.nfl_team)) return false;
             const k = kickoff(p.id);
             if (k && k <= now) return false;
             return true;

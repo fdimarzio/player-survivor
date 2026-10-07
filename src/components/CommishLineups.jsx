@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   POSITIONS, POS_LABEL, getAllTeams, getPlayers, getUsedPlayerIds,
-  getLineup, ensureLineup, setSlot, clearSlot, getWeekScores,
+  getLineup, ensureLineup, setSlot, clearSlot, getWeekScores, getByeTeams,
 } from '../api.js';
 import PlayerPicker from './PlayerPicker.jsx';
 
@@ -11,6 +11,7 @@ export default function CommishLineups({ season }) {
   const [week, setWeek] = useState(season.current_week);
   const [players, setPlayers] = useState(null);
   const [used, setUsed] = useState(new Set());
+  const [byeTeams, setByeTeams] = useState(new Set());
   const [slots, setSlots] = useState({});
   const [scores, setScores] = useState({});
   const [busyPos, setBusyPos] = useState('');
@@ -27,12 +28,14 @@ export default function CommishLineups({ season }) {
     if (!teamId) { setSlots({}); return; }
     setLoading(true); setErr('');
     try {
-      const [usedIds, lineup, sc] = await Promise.all([
+      const [usedIds, lineup, sc, bye] = await Promise.all([
         getUsedPlayerIds(teamId, week),
         getLineup(teamId, week),
         getWeekScores(season.id, week),
+        getByeTeams(season.id, week),
       ]);
       setUsed(usedIds);
+      setByeTeams(bye);
       setScores(sc);
       const m = {};
       for (const s of lineup?.lineup_slots || []) m[s.position] = s.player_id;
@@ -86,7 +89,7 @@ export default function CommishLineups({ season }) {
       <p className="muted small">
         Edit any team's lineup for them. The no-repeat rule still applies to that
         team, but the kickoff lock does not — as commissioner you can change picks
-        even after games have started.
+        even after games have started.{byeTeams.size > 0 ? ' Players on bye for the selected week are hidden.' : ''}
       </p>
 
       <div className="card pad">
@@ -120,7 +123,9 @@ export default function CommishLineups({ season }) {
         <div className="lineup card">
           {POSITIONS.map((pos) => {
             const cur = slots[pos] || '';
-            const eligible = players.byPos[pos].filter((p) => !used.has(p.id) || p.id === cur);
+            const eligible = players.byPos[pos].filter(
+              (p) => p.id === cur || (!used.has(p.id) && !byeTeams.has(p.nfl_team))
+            );
             const val = scores[cur];
             return (
               <div className="lrow" key={pos}>
